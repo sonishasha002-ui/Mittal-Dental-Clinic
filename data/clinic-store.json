@@ -1,0 +1,58 @@
+{
+  "branches": [
+    {
+      "id": "civil-lines",
+      "label": "Primary Branch",
+      "name": "Mittal Dental Clinic — Civil Lines",
+      "badge": "Primary Branch · Civil Lines",
+      "addressLines": [
+        "5, 1A, Tej Bahadur Sapru Road,",
+        "Agnipath Colony, Civil Lines,",
+        "Prayagraj, Uttar Pradesh – 211001."
+      ],
+      "fullAddress": "5, 1A, Tej Bahadur Sapru Road, Agnipath Colony, Civil Lines, Prayagraj, Uttar Pradesh – 211001",
+      "phone": "098395 80829",
+      "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Mittal+Dental+Clinic+5+1A+Tej+Bahadur+Sapru+Road+Agnipath+Colony+Civil+Lines+Prayagraj+211001",
+      "googleProfileUrl": "https://www.google.com/maps/search/?api=1&query=Mittal+Dental+Clinic+Civil+Lines+Prayagraj",
+      "hours": {
+        "mondayToSaturday": [
+          "10:00 AM – 12:00 PM",
+          "4:00 PM – 8:00 PM"
+        ],
+        "sunday": [
+          "10:00 AM – 12:00 PM"
+        ],
+        "note": "Listed clinic hours. Please call 098395 80829 to confirm branch-specific slot availability.",
+        "lastUpdated": "2026-11-16T00:00:00.000Z"
+      }
+    },
+    {
+      "id": "zero-road",
+      "label": "Second Branch",
+      "name": "Mittal Dental Clinic — Zero Road",
+      "badge": "Second Branch · Zero Road",
+      "addressLines": [
+        "90/78, Mahajani Tola,",
+        "Near Sri Hatkeshwar Nath Mandir,",
+        "Zero Road, Prayagraj, Uttar Pradesh – 211003."
+      ],
+      "fullAddress": "90/78, Mahajani Tola, Near Sri Hatkeshwar Nath Mandir, Zero Road, Prayagraj, Uttar Pradesh – 211003",
+      "phone": "098395 80829",
+      "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Mittal+Dental+Clinic+90%2F78+Mahajani+Tola+Near+Sri+Hatkeshwar+Nath+Mandir+Zero+Road+Prayagraj+211003",
+      "googleProfileUrl": "https://www.google.com/maps/search/?api=1&query=Mittal+Dental+Clinic+Zero+Road+Prayagraj",
+      "hours": {
+        "mondayToSaturday": [
+          "10:00 AM – 12:00 PM",
+          "4:00 PM – 8:00 PM"
+        ],
+        "sunday": [
+          "10:00 AM – 12:00 PM"
+        ],
+        "note": "Timings shown from supplied listing. Independently editable for Zero Road branch confirmation.",
+        "lastUpdated": "2026-11-16T00:00:00.000Z"
+      }
+    }
+  ],
+  "appointments": [],
+  "gallery": []
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Mittal Dental Clinic — Prayagraj",
+  "description": "Multispecialty dental and orthodontic care in Civil Lines and Zero Road, Prayagraj, led by Dr. Rishabh Mittal (BDS, Gold Medalist).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
