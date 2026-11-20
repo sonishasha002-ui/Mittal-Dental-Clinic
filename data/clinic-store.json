@@ -53,6 +53,20 @@
       }
     }
   ],
-  "appointments": [],
+  "appointments": [
+    {
+      "id": "MDC-NJC4GZ",
+      "patientName": "Test",
+      "mobileNumber": "+91 98395 80829",
+      "branchId": "civil-lines",
+      "branchName": "Mittal Dental Clinic — Civil Lines",
+      "treatment": "Dental Consultation",
+      "preferredDate": "2026-11-20",
+      "preferredTime": "10:00 AM – 12:00 PM",
+      "message": "",
+      "status": "pending_clinic_confirmation",
+      "createdAt": "2026-11-19T12:37:25.283Z"
+    }
+  ],
   "gallery": []
 }

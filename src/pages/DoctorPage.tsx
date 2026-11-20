@@ -9,12 +9,11 @@ import {
   Phone,
   ShieldCheck,
   Sparkles,
-  Upload,
 } from 'lucide-react';
-import { CLINIC_INFO } from '../data/clinicData';
 import { useClinic } from '../context/ClinicContext';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { ImageWithFallback } from '../components/ImageWithFallback';
+import { buildPhoneHref } from '../services/clinicFirestore';
 
 const CARE_PHILOSOPHY = [
   {
@@ -39,8 +38,9 @@ const CARE_PHILOSOPHY = [
 
 export function DoctorPage() {
   usePageMeta();
-  const { branches, gallery, openUploader } = useClinic();
-  const doctorPortrait = gallery.find((g) => g.category === 'doctor-portrait');
+  const { clinicInfo, doctorProfile, branches, gallery } = useClinic();
+  const galleryPortrait = gallery.find((g) => g.category === 'doctor-portrait');
+  const portraitSrc = (doctorProfile.portraitUrl || galleryPortrait?.imageDataUrl || '').trim();
 
   return (
     <div>
@@ -63,11 +63,11 @@ export function DoctorPage() {
               transition={{ duration: 0.45 }}
               className="lg:col-span-4"
             >
-              {doctorPortrait ? (
+              {portraitSrc ? (
                 <div className="rounded-3xl overflow-hidden border border-[#00D9FF]/40 bg-[#061525] shadow-[0_0_44px_rgba(0,217,255,0.2)] aspect-[3/4] max-w-sm mx-auto">
                   <ImageWithFallback
-                    src={doctorPortrait.imageDataUrl}
-                    alt={`${CLINIC_INFO.doctor.name} (${CLINIC_INFO.doctor.qualification})`}
+                    src={portraitSrc}
+                    alt={`${doctorProfile.name} (${doctorProfile.qualification})`}
                     loading="eager"
                     className="w-full h-full object-cover"
                   />
@@ -94,21 +94,18 @@ export function DoctorPage() {
                       </div>
                     </div>
                     <h2 className="font-display text-xl font-bold text-white">
-                      {CLINIC_INFO.doctor.name}
+                      {doctorProfile.name}
                     </h2>
                     <p className="text-sm font-medium text-[#00D9FF] mt-1">
-                      {CLINIC_INFO.doctor.qualification}
+                      {doctorProfile.qualification}
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => openUploader('doctor-portrait')}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl bg-white/8 hover:bg-[#00D9FF]/20 border border-[#00D9FF]/30 text-xs font-semibold text-white transition-colors cursor-pointer"
-                  >
-                    <Upload className="w-3.5 h-3.5 text-[#00D9FF]" />
-                    <span>Upload Authentic Portrait</span>
-                  </button>
+                  <div className="pt-4 border-t border-[#00D9FF]/20 text-center">
+                    <p className="text-xs text-[#DFFAFF]/75">
+                      {clinicInfo.name} · Prayagraj
+                    </p>
+                  </div>
                 </div>
               )}
             </motion.div>
@@ -121,40 +118,40 @@ export function DoctorPage() {
             >
               <div>
                 <p className="text-xs sm:text-sm font-bold tracking-[0.16em] text-[#00D9FF] uppercase mb-2">
-                  Lead Dental Surgeon · Mittal Dental Clinic
+                  {doctorProfile.roleTitle}
                 </p>
                 <h1 className="font-display text-3xl sm:text-5xl font-extrabold text-white tracking-tight text-balance">
-                  {CLINIC_INFO.doctor.name}
+                  {doctorProfile.name}
                 </h1>
                 <p className="text-base sm:text-xl font-semibold text-[#00D9FF] mt-1.5">
-                  {CLINIC_INFO.doctor.qualification}
+                  {doctorProfile.qualification}
                 </p>
               </div>
 
               <p className="text-sm sm:text-base text-[#DFFAFF]/85 leading-relaxed max-w-2xl">
-                Dr. Rishabh Mittal leads patient care at Mittal Dental Clinic across both the Civil Lines and Zero Road centres in Prayagraj. Every consultation focuses on accurate diagnosis, plain-language explanation of treatment options, and attentive chairside comfort tailored to individual patient needs.
+                {doctorProfile.bio}
               </p>
 
               <div className="grid sm:grid-cols-3 gap-4 pt-4 border-t border-[#00D9FF]/20">
                 <div className="p-5 rounded-2xl bg-[#061525]/60 border border-[#00D9FF]/22">
                   <p className="text-xs text-[#00D9FF] font-semibold mb-1">Academic Qualification</p>
                   <p className="font-display text-base font-bold text-white">
-                    {CLINIC_INFO.doctor.qualification}
+                    {doctorProfile.qualification}
                   </p>
                 </div>
                 <div className="p-5 rounded-2xl bg-[#061525]/60 border border-[#00D9FF]/22">
                   <p className="text-xs text-[#00D9FF] font-semibold mb-1">Clinical Focus</p>
                   <p className="font-display text-base font-bold text-white">
-                    Multispecialty &amp; Orthodontic Care
+                    {doctorProfile.clinicalScope}
                   </p>
                 </div>
                 <div className="p-5 rounded-2xl bg-[#061525]/60 border border-[#00D9FF]/22">
                   <p className="text-xs text-[#00D9FF] font-semibold mb-1">Direct Appointment Line</p>
                   <a
-                    href={CLINIC_INFO.phoneHref}
+                    href={buildPhoneHref(clinicInfo.phoneDisplay)}
                     className="font-display text-base font-bold text-white hover:text-[#00D9FF] transition-colors tabular-nums"
                   >
-                    {CLINIC_INFO.phoneDisplay}
+                    {clinicInfo.phoneDisplay}
                   </a>
                 </div>
               </div>
@@ -168,11 +165,11 @@ export function DoctorPage() {
                   <span>Request Appointment</span>
                 </Link>
                 <a
-                  href={CLINIC_INFO.phoneHref}
+                  href={buildPhoneHref(clinicInfo.phoneDisplay)}
                   className="inline-flex items-center gap-2 px-5 py-3.5 min-h-[44px] rounded-xl bg-white/10 hover:bg-white/16 border border-[#00D9FF]/35 text-white text-sm font-semibold tabular-nums transition-colors"
                 >
                   <Phone className="w-4 h-4 text-[#00D9FF]" />
-                  <span>Call {CLINIC_INFO.phoneDisplay}</span>
+                  <span>Call {clinicInfo.phoneDisplay}</span>
                 </a>
               </div>
             </motion.div>

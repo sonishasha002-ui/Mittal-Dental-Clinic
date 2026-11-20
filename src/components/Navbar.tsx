@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useScroll, useSpring } from 'motion/react';
 import { Menu, Moon, Phone, Sun, X } from 'lucide-react';
-import { CLINIC_INFO } from '../data/clinicData';
+import { useClinic } from '../context/ClinicContext';
 import { useTheme } from '../context/ThemeContext';
+import { buildPhoneHref } from '../services/clinicFirestore';
 
 export const NAV_ROUTES = [
   { label: 'Home', to: '/' },
@@ -20,6 +21,8 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const { pathname } = useLocation();
   const { theme, toggleTheme } = useTheme();
+  const { clinicInfo } = useClinic();
+  const phoneHref = buildPhoneHref(clinicInfo.phoneDisplay);
 
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
@@ -70,7 +73,7 @@ export function Navbar() {
             </svg>
           </span>
           <span className="font-display text-sm sm:text-lg font-bold tracking-tight text-[#061525] dark:text-white transition-colors">
-            Mittal Dental Clinic
+            {clinicInfo.name}
           </span>
         </Link>
 
@@ -152,12 +155,12 @@ export function Navbar() {
           </button>
 
           <a
-            href={CLINIC_INFO.phoneHref}
+            href={phoneHref}
             className="hidden xl:inline-flex items-center gap-1.5 text-xs font-semibold text-[#061525] dark:text-[#DFFAFF] hover:text-[#176BFF] dark:hover:text-[#00D9FF] transition-colors whitespace-nowrap shrink-0 tabular-nums px-2 py-2 rounded-lg"
-            aria-label={`Call ${CLINIC_INFO.phoneDisplay}`}
+            aria-label={`Call ${clinicInfo.phoneDisplay}`}
           >
             <Phone className="w-3.5 h-3.5 text-[#00C6B7] dark:text-[#00D9FF]" aria-hidden="true" />
-            <span>{CLINIC_INFO.phoneDisplay}</span>
+            <span>{clinicInfo.phoneDisplay}</span>
           </a>
 
           <Link
@@ -212,11 +215,11 @@ export function Navbar() {
 
               <div className="pt-3 border-t border-[#082B48]/10 dark:border-[#00D9FF]/15 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                 <a
-                  href={CLINIC_INFO.phoneHref}
+                  href={phoneHref}
                   className="inline-flex items-center justify-center gap-2 px-4 py-3 min-h-[44px] rounded-xl border border-[#082B48]/15 dark:border-[#00D9FF]/25 text-sm font-semibold text-[#061525] dark:text-white tabular-nums"
                 >
                   <Phone className="w-4 h-4 text-[#00C6B7] dark:text-[#00D9FF]" />
-                  <span>Call {CLINIC_INFO.phoneDisplay}</span>
+                  <span>Call {clinicInfo.phoneDisplay}</span>
                 </a>
                 <Link
                   to="/contact"

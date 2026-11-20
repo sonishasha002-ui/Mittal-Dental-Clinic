@@ -1,84 +1,20 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowUpRight,
   CalendarCheck,
   Clock,
-  Edit3,
   ExternalLink,
   MapPin,
   Phone,
   ShieldCheck,
-  X,
 } from 'lucide-react';
-import type { BranchInfo } from '../data/clinicData';
 import { useClinic } from '../context/ClinicContext';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { buildPhoneHref } from '../services/clinicFirestore';
 
 export function LocationsPage() {
   usePageMeta();
-  const { branches, updateBranch } = useClinic();
-
-  const [editingBranch, setEditingBranch] = useState<BranchInfo | null>(null);
-  const [monSatInput, setMonSatInput] = useState('');
-  const [sundayInput, setSundayInput] = useState('');
-  const [noteInput, setNoteInput] = useState('');
-  const [mapsUrlInput, setMapsUrlInput] = useState('');
-  const [savingHours, setSavingHours] = useState(false);
-  const [hoursError, setHoursError] = useState('');
-
-  const openEditor = (branch: BranchInfo) => {
-    setEditingBranch(branch);
-    setMonSatInput(branch.hours.mondayToSaturday.join('\n'));
-    setSundayInput(branch.hours.sunday.join('\n'));
-    setNoteInput(branch.hours.note);
-    setMapsUrlInput(branch.mapsUrl);
-    setHoursError('');
-  };
-
-  const handleSaveHours = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingBranch) return;
-    setHoursError('');
-    const monSatList = monSatInput
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const sunList = sundayInput
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    if (monSatList.length === 0 || sunList.length === 0) {
-      setHoursError('Please enter at least one opening timing for Monday–Saturday and Sunday.');
-      return;
-    }
-
-    setSavingHours(true);
-    try {
-      const res = await fetch(`/api/branches/${editingBranch.id}/hours`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mondayToSaturday: monSatList,
-          sunday: sunList,
-          note: noteInput,
-          mapsUrl: mapsUrlInput,
-        }),
-      });
-      const data = (await res.json()) as { branch?: BranchInfo; error?: string };
-      if (!res.ok || !data.branch) {
-        throw new Error(data.error || 'Could not update branch hours.');
-      }
-      updateBranch(data.branch);
-      setEditingBranch(null);
-    } catch (err) {
-      setHoursError(err instanceof Error ? err.message : 'Save failed.');
-    } finally {
-      setSavingHours(false);
-    }
-  };
+  const { clinicInfo, branches } = useClinic();
 
   return (
     <div>
@@ -96,7 +32,7 @@ export function LocationsPage() {
             Visit Civil Lines or Zero Road, Prayagraj
           </h1>
           <p className="text-sm sm:text-base text-[#DFFAFF]/82 max-w-2xl leading-relaxed">
-            Both branches offer independent opening hour controls and direct Google Maps navigation. Call 098395 80829 to verify slot availability before visiting.
+            Both branches offer independent opening hour controls and direct Google Maps navigation. Call {clinicInfo.phoneDisplay} to verify slot availability before visiting.
           </p>
         </div>
       </section>
@@ -120,14 +56,6 @@ export function LocationsPage() {
                         {branch.name}
                       </h2>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => openEditor(branch)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-xl bg-[#EDF7FC] dark:bg-[#061525]/80 border border-[#082B48]/15 dark:border-[#00D9FF]/30 text-xs font-semibold text-[#061525] dark:text-white hover:border-[#00C6B7] dark:hover:border-[#00D9FF] hover:text-[#176BFF] dark:hover:text-[#00D9FF] transition-colors cursor-pointer"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      <span>Edit Branch Hours</span>
-                    </button>
                   </div>
 
                   {/* Verified Address */}
@@ -215,7 +143,7 @@ export function LocationsPage() {
                   </a>
 
                   <a
-                    href={`tel:+91${branch.phone.replace(/\s+/g, '').replace(/^0/, '')}`}
+                    href={buildPhoneHref(branch.phone)}
                     className="inline-flex items-center gap-1.5 px-4 py-3 min-h-[44px] rounded-xl bg-[#EDF7FC] dark:bg-[#061525]/80 border border-[#082B48]/15 dark:border-[#00D9FF]/25 text-xs font-semibold text-[#061525] dark:text-white tabular-nums whitespace-nowrap"
                   >
                     <Phone className="w-3.5 h-3.5 text-[#00C6B7] dark:text-[#00D9FF]" />
@@ -268,121 +196,6 @@ export function LocationsPage() {
         </div>
       </section>
 
-      {/* Dual-Theme Independent Branch Opening Hours Editor Modal */}
-      <AnimatePresence>
-        {editingBranch && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-[#061525]/75 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setEditingBranch(null)}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="edit-hours-title"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white dark:bg-[#082B48] border border-[#082B48]/15 dark:border-[#00D9FF]/30 shadow-2xl"
-            >
-              <div className="p-5 sm:p-6 bg-gradient-to-r from-[#061525] to-[#082B48] border-b border-[#00D9FF]/20 flex items-center justify-between text-white">
-                <div>
-                  <p className="text-xs font-semibold text-[#00D9FF] mb-0.5">
-                    Independent Branch Schedule
-                  </p>
-                  <h3 id="edit-hours-title" className="font-display text-lg font-bold">
-                    Edit Hours — {editingBranch.name}
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditingBranch(null)}
-                  className="min-w-[44px] min-h-[44px] rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white hover:bg-[#00D9FF] hover:text-[#061525] transition-colors cursor-pointer"
-                  aria-label="Close hours editor"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveHours} className="p-5 sm:p-6 space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#061525] dark:text-[#DFFAFF] mb-1.5">
-                    Monday to Saturday Timings (one slot per line)
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={monSatInput}
-                    onChange={(e) => setMonSatInput(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#EDF7FC] dark:bg-[#061525]/85 border border-[#082B48]/15 dark:border-[#00D9FF]/25 text-sm text-[#061525] dark:text-white font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#061525] dark:text-[#DFFAFF] mb-1.5">
-                    Sunday Timings (one slot per line)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={sundayInput}
-                    onChange={(e) => setSundayInput(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#EDF7FC] dark:bg-[#061525]/85 border border-[#082B48]/15 dark:border-[#00D9FF]/25 text-sm text-[#061525] dark:text-white font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#061525] dark:text-[#DFFAFF] mb-1.5">
-                    Branch Timing Note
-                  </label>
-                  <input
-                    type="text"
-                    value={noteInput}
-                    onChange={(e) => setNoteInput(e.target.value)}
-                    className="w-full px-3.5 py-2.5 min-h-[44px] rounded-xl bg-[#EDF7FC] dark:bg-[#061525]/85 border border-[#082B48]/15 dark:border-[#00D9FF]/25 text-sm text-[#061525] dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#061525] dark:text-[#DFFAFF] mb-1.5">
-                    Verified Google Maps Place URL
-                  </label>
-                  <input
-                    type="url"
-                    value={mapsUrlInput}
-                    onChange={(e) => setMapsUrlInput(e.target.value)}
-                    className="w-full px-3.5 py-2.5 min-h-[44px] rounded-xl bg-[#EDF7FC] dark:bg-[#061525]/85 border border-[#082B48]/15 dark:border-[#00D9FF]/25 text-xs text-[#061525] dark:text-white"
-                  />
-                </div>
-
-                {hoursError && (
-                  <p className="text-xs font-medium text-red-500" role="alert">
-                    {hoursError}
-                  </p>
-                )}
-
-                <div className="pt-2 flex items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setEditingBranch(null)}
-                    className="px-4 py-2.5 min-h-[44px] rounded-xl border border-[#082B48]/15 dark:border-[#00D9FF]/25 text-xs font-semibold text-[#061525] dark:text-white cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={savingHours}
-                    className="px-5 py-2.5 min-h-[44px] rounded-xl bg-gradient-to-r from-[#176BFF] to-[#00C6B7] disabled:opacity-60 text-white text-xs font-semibold transition-all cursor-pointer"
-                  >
-                    {savingHours ? 'Saving...' : 'Save Branch Hours'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

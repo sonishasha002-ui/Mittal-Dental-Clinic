@@ -1,29 +1,36 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AnimatePresence, motion } from 'motion/react';
 import {
   Calendar,
   CheckCircle2,
-  ClipboardList,
   Clock,
   MapPin,
   MessageCircle,
   MessageSquare,
   Phone,
   Send,
-  X,
 } from 'lucide-react';
-import {
-  CLINIC_INFO,
-  TREATMENTS,
-  type AppointmentRecord,
-} from '../data/clinicData';
+import { TREATMENTS } from '../data/clinicData';
 import { useClinic } from '../context/ClinicContext';
 import { usePageMeta } from '../hooks/usePageMeta';
+import {
+  buildPhoneHref,
+  buildWhatsappHref,
+  submitAppointmentRequest,
+} from '../services/clinicFirestore';
+
+interface SubmittedConfirmation {
+  referenceCode: string;
+  patientName: string;
+  branchName: string;
+  treatment: string;
+  preferredDate: string;
+  preferredTime: string;
+}
 
 export function ContactPage() {
   usePageMeta();
-  const { branches } = useClinic();
+  const { clinicInfo, doctorProfile, branches } = useClinic();
   const [searchParams] = useSearchParams();
 
   const initialBranchParam = searchParams.get('branch');
@@ -53,13 +60,9 @@ export function ContactPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [confirmedRecord, setConfirmedRecord] = useState<{
-    appointment: AppointmentRecord;
+    appointment: SubmittedConfirmation;
     notice: string;
   } | null>(null);
-
-  const [deskOpen, setDeskOpen] = useState(false);
-  const [deskRequests, setDeskRequests] = useState<AppointmentRecord[]>([]);
-  const [loadingDesk, setLoadingDesk] = useState(false);
 
   useEffect(() => {
     const b = searchParams.get('branch');
@@ -83,64 +86,48 @@ export function ContactPage() {
     }
   }, [selectedBranchId, branches]);
 
-  const loadDeskRequests = async () => {
-    setDeskOpen(true);
-    setLoadingDesk(true);
-    try {
-      const res = await fetch('/api/appointments');
-      const data = (await res.json()) as { appointments?: AppointmentRecord[] };
-      if (Array.isArray(data.appointments)) {
-        setDeskRequests(data.appointments);
-      }
-    } catch {
-      // keep existing state
-    } finally {
-      setLoadingDesk(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setSubmitting(true);
 
     try {
-      const res = await fetch('/api/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patientName,
-          mobileNumber,
-          branchId: selectedBranchId,
-          treatment,
-          preferredDate,
-          preferredTime,
-          message,
-        }),
+      const created = await submitAppointmentRequest({
+        patientName,
+        mobileNumber,
+        branchId: selectedBranchId,
+        branchName: activeBranch ? activeBranch.name : selectedBranchId,
+        treatment,
+        preferredDate,
+        preferredTime,
+        message,
       });
-      const data = (await res.json()) as {
-        appointment?: AppointmentRecord;
-        notice?: string;
-        error?: string;
-      };
-
-      if (!res.ok || !data.appointment) {
-        throw new Error(data.error || 'Unable to submit appointment request.');
-      }
 
       setConfirmedRecord({
-        appointment: data.appointment,
-        notice:
-          data.notice ||
-          'Request received. Mittal Dental Clinic will confirm your slot via phone.',
+        appointment: {
+          referenceCode: created.referenceCode,
+          patientName: created.patientName,
+          branchName: created.branchName,
+          treatment: created.treatment,
+          preferredDate: created.preferredDate,
+          preferredTime: created.preferredTime,
+        },
+        notice: `Your appointment request has been received by ${clinicInfo.name}. Final slot confirmation will be provided by the clinic desk on ${clinicInfo.phoneDisplay}.`,
       });
       setPatientName('');
       setMobileNumber('');
       setMessage('');
     } catch (err) {
-      setErrorMsg(
-        err instanceof Error ? err.message : 'Submission error. Please call 098395 80829.',
-      );
+      let friendlyMsg = `Submission error. Please call ${clinicInfo.phoneDisplay}.`;
+      if (err instanceof Error) {
+        try {
+          const parsed = JSON.parse(err.message) as { error?: string };
+          friendlyMsg = parsed.error || err.message;
+        } catch {
+          friendlyMsg = err.message;
+        }
+      }
+      setErrorMsg(friendlyMsg);
     } finally {
       setSubmitting(false);
     }
@@ -162,7 +149,7 @@ export function ContactPage() {
             Book Your Consultation in Prayagraj
           </h1>
           <p className="text-sm sm:text-base text-[#DFFAFF]/82 max-w-2xl leading-relaxed">
-            Request an appointment at Civil Lines or Zero Road, or contact Dr. Rishabh Mittal’s clinic desk directly on {CLINIC_INFO.phoneDisplay}.
+            Request an appointment at Civil Lines or Zero Road, or contact {doctorProfile.name}’s clinic desk directly on {clinicInfo.phoneDisplay}.
           </p>
         </div>
       </section>
@@ -181,10 +168,10 @@ export function ContactPage() {
                   <div>
                     <p className="text-xs font-semibold text-[#00D9FF]">Official Clinic Contact</p>
                     <a
-                      href={CLINIC_INFO.phoneHref}
+                      href={buildPhoneHref(clinicInfo.phoneDisplay)}
                       className="font-display text-xl sm:text-2xl font-bold text-white hover:text-[#00D9FF] transition-colors tabular-nums"
                     >
-                      {CLINIC_INFO.phoneDisplay}
+                      {clinicInfo.phoneDisplay}
                     </a>
                     <p className="text-xs text-[#DFFAFF]/72 mt-1">
                       Tap to call directly for toothache support or slot confirmation.
@@ -218,14 +205,14 @@ export function ContactPage() {
 
                 <div className="flex flex-wrap items-center gap-3 pt-2">
                   <a
-                    href={CLINIC_INFO.phoneHref}
+                    href={buildPhoneHref(clinicInfo.phoneDisplay)}
                     className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl bg-gradient-to-r from-[#176BFF] to-[#00C6B7] text-white text-xs font-semibold tabular-nums"
                   >
                     <Phone className="w-4 h-4" />
                     <span>Call Now</span>
                   </a>
                   <a
-                    href={CLINIC_INFO.whatsappHref}
+                    href={buildWhatsappHref(clinicInfo.whatsappNumber)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl bg-white/10 hover:bg-white/16 border border-[#00D9FF]/35 text-white text-xs font-semibold transition-colors"
@@ -235,15 +222,6 @@ export function ContactPage() {
                   </a>
                 </div>
               </div>
-
-              <button
-                type="button"
-                onClick={loadDeskRequests}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 min-h-[44px] rounded-2xl bg-white dark:bg-[#082B48] border border-[#082B48]/15 dark:border-[#00D9FF]/30 text-xs font-semibold text-[#061525] dark:text-white hover:border-[#00D9FF] transition-colors cursor-pointer"
-              >
-                <ClipboardList className="w-4 h-4 text-[#176BFF] dark:text-[#00D9FF]" />
-                <span>Clinic Desk: View Logged Requests</span>
-              </button>
             </div>
 
             {/* Right Column: Interactive Appointment Request Form */}
@@ -257,7 +235,7 @@ export function ContactPage() {
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-[#176BFF] dark:text-[#00D9FF] mb-1">
-                          Appointment Request Logged · Ref {confirmedRecord.appointment.id}
+                          Appointment Request Logged · Ref {confirmedRecord.appointment.referenceCode}
                         </p>
                         <h2 className="font-display text-2xl font-bold text-[#061525] dark:text-white mb-2">
                           Thank You, {confirmedRecord.appointment.patientName}
@@ -303,11 +281,11 @@ export function ContactPage() {
                           Submit Another Request
                         </button>
                         <a
-                          href={CLINIC_INFO.phoneHref}
+                          href={buildPhoneHref(clinicInfo.phoneDisplay)}
                           className="inline-flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] rounded-xl border border-[#082B48]/15 dark:border-[#00D9FF]/25 text-xs font-semibold text-[#061525] dark:text-white tabular-nums"
                         >
                           <Phone className="w-3.5 h-3.5 text-[#00C6B7] dark:text-[#00D9FF]" />
-                          <span>Call {CLINIC_INFO.phoneDisplay}</span>
+                          <span>Call {clinicInfo.phoneDisplay}</span>
                         </a>
                       </div>
                     </div>
@@ -456,7 +434,7 @@ export function ContactPage() {
 
                       <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <p className="text-xs text-[#061525]/65 dark:text-[#DFFAFF]/70">
-                          Final appointment confirmation is coordinated by the clinic desk at 098395 80829.
+                          Final appointment confirmation is coordinated by the clinic desk at {clinicInfo.phoneDisplay}.
                         </p>
                         <button
                           type="submit"
@@ -475,91 +453,6 @@ export function ContactPage() {
           </div>
         </div>
       </section>
-
-      {/* Clinic Desk Logged Appointment Requests Modal */}
-      <AnimatePresence>
-        {deskOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-[#061525]/75 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setDeskOpen(false)}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Submitted Appointment Requests"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl max-h-[82vh] flex flex-col rounded-3xl bg-white dark:bg-[#082B48] border border-[#082B48]/15 dark:border-[#00D9FF]/30 shadow-2xl overflow-hidden"
-            >
-              <div className="p-5 sm:p-6 bg-gradient-to-r from-[#061525] to-[#082B48] border-b border-[#00D9FF]/20 flex items-center justify-between text-white">
-                <div>
-                  <h3 className="font-display text-lg font-bold">
-                    Clinic Desk — Logged Appointment Requests
-                  </h3>
-                  <p className="text-xs text-[#DFFAFF]/75 mt-0.5">
-                    Backend log of patient consultation requests
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setDeskOpen(false)}
-                  className="min-w-[44px] min-h-[44px] rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white hover:bg-[#00D9FF] hover:text-[#061525] transition-colors cursor-pointer"
-                  aria-label="Close clinic desk drawer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="p-5 sm:p-6 overflow-y-auto space-y-3">
-                {loadingDesk ? (
-                  <p className="text-sm text-[#061525]/70 dark:text-[#DFFAFF]/75">
-                    Loading appointment requests...
-                  </p>
-                ) : deskRequests.length === 0 ? (
-                  <p className="text-sm text-[#061525]/70 dark:text-[#DFFAFF]/75 py-8 text-center">
-                    No appointment requests have been submitted yet.
-                  </p>
-                ) : (
-                  deskRequests.map((req) => (
-                    <div
-                      key={req.id}
-                      className="rounded-2xl border border-[#082B48]/12 dark:border-[#00D9FF]/20 bg-[#EDF7FC] dark:bg-[#061525]/80 p-4 space-y-2"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-display text-sm font-bold text-[#061525] dark:text-white">
-                          {req.patientName} · <span className="tabular-nums">{req.mobileNumber}</span>
-                        </span>
-                        <span className="font-mono text-xs font-semibold text-[#176BFF] dark:text-[#00D9FF] tabular-nums">
-                          {req.id}
-                        </span>
-                      </div>
-                      <div className="text-xs text-[#061525]/80 dark:text-[#DFFAFF]/80 flex flex-wrap items-center gap-2">
-                        <span>{req.branchName}</span>
-                        <span aria-hidden="true">·</span>
-                        <span>{req.treatment}</span>
-                        <span aria-hidden="true">·</span>
-                        <span className="tabular-nums">
-                          {req.preferredDate} ({req.preferredTime})
-                        </span>
-                      </div>
-                      {req.message && (
-                        <p className="text-xs text-[#061525]/70 dark:text-[#DFFAFF]/70 pt-1">
-                          {req.message}
-                        </p>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

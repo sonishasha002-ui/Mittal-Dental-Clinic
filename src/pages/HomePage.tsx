@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
@@ -11,13 +11,11 @@ import {
   MapPin,
   Microscope,
   Phone,
-  Quote,
   ShieldCheck,
   Sparkles,
   Star,
 } from 'lucide-react';
 import {
-  CLINIC_INFO,
   CONCEPT_VISUALS,
   TREATMENTS,
   type TreatmentItem,
@@ -29,6 +27,11 @@ import { SectionDivider } from '../components/SectionDivider';
 import { TreatmentIllustration3D } from '../components/TreatmentIllustration3D';
 import { TreatmentModal } from '../components/TreatmentModal';
 import { ImageWithFallback } from '../components/ImageWithFallback';
+import { buildPhoneHref } from '../services/clinicFirestore';
+import {
+  fetchGoogleReviewsSummary,
+  type GoogleReviewsSummary,
+} from '../services/googleReviews';
 
 const HOME_WHY_PREVIEW = [
   {
@@ -50,11 +53,24 @@ const HOME_WHY_PREVIEW = [
 
 export function HomePage() {
   usePageMeta();
-  const { branches, gallery } = useClinic();
+  const { clinicInfo, doctorProfile, branches, gallery } = useClinic();
   const [selectedTreatment, setSelectedTreatment] = useState<TreatmentItem | null>(null);
+  const [googleSummary, setGoogleSummary] = useState<GoogleReviewsSummary | null>(null);
+  const phoneHref = buildPhoneHref(clinicInfo.phoneDisplay);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchGoogleReviewsSummary(controller.signal).then((summary) => {
+      if (!controller.signal.aborted) {
+        setGoogleSummary(summary);
+      }
+    });
+    return () => controller.abort();
+  }, []);
 
   const featuredTreatments = TREATMENTS.filter((t) => t.featuredOnHome).slice(0, 6);
-  const doctorPortrait = gallery.find((g) => g.category === 'doctor-portrait');
+  const galleryPortrait = gallery.find((g) => g.category === 'doctor-portrait');
+  const doctorPortraitSrc = (doctorProfile.portraitUrl || galleryPortrait?.imageDataUrl || '').trim();
   const uploadedClinicPhotos = gallery
     .filter((g) => g.category !== 'doctor-portrait')
     .slice(0, 3);
@@ -102,7 +118,7 @@ export function HomePage() {
               className="lg:col-span-6 space-y-5 sm:space-y-6"
             >
               <p className="text-xs sm:text-sm font-bold tracking-[0.16em] text-[#00D9FF] uppercase">
-                Mittal Dental Clinic · Prayagraj
+                {clinicInfo.name} · Prayagraj
               </p>
 
               <h1 className="font-display text-3xl sm:text-5xl lg:text-[3.55rem] font-extrabold text-white leading-[1.08] tracking-tight text-balance">
@@ -117,9 +133,9 @@ export function HomePage() {
               </p>
 
               <p className="text-sm sm:text-base font-medium text-[#DFFAFF]/90">
-                <strong className="font-semibold text-white">{CLINIC_INFO.doctor.name}</strong>
+                <strong className="font-semibold text-white">{doctorProfile.name}</strong>
                 <span className="mx-2 text-[#00D9FF]" aria-hidden="true">/</span>
-                <span className="text-[#00D9FF]">{CLINIC_INFO.doctor.qualification}</span>
+                <span className="text-[#00D9FF]">{doctorProfile.qualification}</span>
               </p>
 
               <div className="flex flex-wrap items-center gap-3 pt-1">
@@ -140,7 +156,7 @@ export function HomePage() {
                 </Link>
 
                 <a
-                  href={CLINIC_INFO.phoneHref}
+                  href={phoneHref}
                   className="inline-flex items-center justify-center gap-2 px-5 py-3 min-h-[44px] rounded-xl bg-[#061525]/70 hover:bg-[#00D9FF]/20 border border-[#00C6B7]/45 text-[#DFFAFF] text-sm font-semibold transition-colors duration-200 tabular-nums whitespace-nowrap"
                 >
                   <Phone className="w-4 h-4 text-[#00D9FF]" />
@@ -155,10 +171,10 @@ export function HomePage() {
                 </span>
                 <span aria-hidden="true" className="text-[#00D9FF]/45">·</span>
                 <a
-                  href={CLINIC_INFO.phoneHref}
+                  href={phoneHref}
                   className="font-semibold text-white hover:text-[#00D9FF] transition-colors tabular-nums"
                 >
-                  {CLINIC_INFO.phoneDisplay}
+                  {clinicInfo.phoneDisplay}
                 </a>
               </div>
             </motion.div>
@@ -189,7 +205,7 @@ export function HomePage() {
                 Thoughtful Dentistry Built Around Patient Comfort
               </h2>
               <p className="text-sm sm:text-base text-[#061525]/80 dark:text-[#DFFAFF]/80 leading-relaxed">
-                {CLINIC_INFO.description} Serving families across Prayagraj from Civil Lines and Zero Road, our clinic emphasizes gentle handling, clear clinical communication, and modern dental systems.
+                {clinicInfo.description} Serving families across Prayagraj from Civil Lines and Zero Road, our clinic emphasizes gentle handling, clear clinical communication, and modern dental systems.
               </p>
               <div className="flex flex-wrap items-center gap-3 pt-1">
                 <Link
@@ -314,11 +330,12 @@ export function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             <div className="lg:col-span-4">
-              {doctorPortrait ? (
+              {doctorPortraitSrc ? (
                 <div className="rounded-3xl overflow-hidden border border-[#00D9FF]/35 bg-[#061525] aspect-[4/4.3] max-w-xs mx-auto shadow-[0_0_36px_rgba(0,217,255,0.2)]">
                   <ImageWithFallback
-                    src={doctorPortrait.imageDataUrl}
-                    alt={`${CLINIC_INFO.doctor.name} (${CLINIC_INFO.doctor.qualification})`}
+                    src={doctorPortraitSrc}
+                    alt={`${doctorProfile.name} (${doctorProfile.qualification})`}
+                    loading="eager"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -328,10 +345,10 @@ export function HomePage() {
                     <span className="font-display text-2xl font-bold text-[#061525]">RM</span>
                   </div>
                   <p className="font-display text-lg font-bold text-white">
-                    {CLINIC_INFO.doctor.name}
+                    {doctorProfile.name}
                   </p>
                   <p className="text-xs font-medium text-[#00D9FF] mt-1">
-                    {CLINIC_INFO.doctor.qualification}
+                    {doctorProfile.qualification}
                   </p>
                 </div>
               )}
@@ -342,10 +359,10 @@ export function HomePage() {
                 Lead Dental Surgeon
               </p>
               <h2 className="font-display text-2xl sm:text-4xl font-bold text-white tracking-tight text-balance">
-                {CLINIC_INFO.doctor.name} — {CLINIC_INFO.doctor.qualification}
+                {doctorProfile.name} — {doctorProfile.qualification}
               </h2>
               <p className="text-sm sm:text-base text-[#DFFAFF]/85 leading-relaxed max-w-2xl">
-                Leading clinical care at both the Civil Lines and Zero Road centres in Prayagraj, Dr. Rishabh Mittal combines clear diagnostic explanations with attentive, anxiety-sensitive dental treatment.
+                Leading clinical care at both the Civil Lines and Zero Road centres in Prayagraj, {doctorProfile.name} combines clear diagnostic explanations with attentive, anxiety-sensitive dental treatment.
               </p>
               <div className="flex flex-wrap items-center gap-3 pt-1">
                 <Link
@@ -587,7 +604,7 @@ export function HomePage() {
           aria-hidden="true"
         />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header + Verified Google Rating & Count Summary Card */}
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div className="max-w-2xl space-y-2">
@@ -603,115 +620,103 @@ export function HomePage() {
             </div>
 
             <div className="rounded-2xl bg-[#061525]/75 backdrop-blur-xl border border-[#00D9FF]/30 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-5 shadow-[0_12px_36px_rgba(0,217,255,0.12)] shrink-0">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5" aria-label="Google star rating placeholder">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <Star
-                      key={n}
-                      className="w-4 h-4 text-[#00D9FF]/75"
-                      aria-hidden="true"
-                    />
-                  ))}
-                  <span className="ml-1.5 text-xs font-semibold text-[#00D9FF]">
-                    Google Rating: [Awaiting Verified Score]
-                  </span>
-                </div>
-                <p className="text-xs text-[#DFFAFF]/78 tabular-nums">
-                  Total Google Reviews: [Verified Review Count Pending]
-                </p>
-              </div>
+              {(() => {
+                const liveRating =
+                  googleSummary?.status === 'ok' && typeof googleSummary.rating === 'number'
+                    ? googleSummary.rating
+                    : null;
+                const liveCount =
+                  googleSummary?.status === 'ok' &&
+                  typeof googleSummary.userRatingCount === 'number'
+                    ? googleSummary.userRatingCount
+                    : null;
+                const reviewLink =
+                  (googleSummary?.status === 'ok' && googleSummary.googleMapsUri) ||
+                  branches[0]?.googleProfileUrl ||
+                  'https://www.google.com/maps/search/?api=1&query=Mittal+Dental+Clinic+Prayagraj';
 
-              <a
-                href={branches[0]?.googleProfileUrl || 'https://www.google.com/maps/search/?api=1&query=Mittal+Dental+Clinic+Prayagraj'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-[#176BFF] to-[#00C6B7] hover:shadow-[0_0_20px_rgba(0,217,255,0.42)] text-white text-xs font-semibold whitespace-nowrap transition-all"
-              >
-                <span>Read Reviews on Google</span>
-                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-              </a>
-            </div>
-          </div>
+                return (
+                  <>
+                    <div className="space-y-1.5">
+                      <div
+                        className="flex items-center gap-1.5"
+                        aria-label={
+                          liveRating !== null
+                            ? `Google rating ${liveRating.toFixed(1)} out of 5`
+                            : 'Google star rating placeholder'
+                        }
+                      >
+                        <div className="flex items-center gap-1" aria-hidden="true">
+                          {[1, 2, 3, 4, 5].map((n) => {
+                            if (liveRating === null) {
+                              return (
+                                <Star
+                                  key={n}
+                                  className="w-4 h-4 text-[#00D9FF]/75"
+                                />
+                              );
+                            }
 
-          {/* Patient Review Placeholder Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                slot: '01',
-                branchLabel: 'Civil Lines · Google Listing',
-                quote:
-                  '[Verified Google patient testimonial placeholder — ready to display authentic patient feedback from Mittal Dental Clinic, Civil Lines once provided.]',
-                author: '[Verified Patient Name Pending]',
-              },
-              {
-                slot: '02',
-                branchLabel: 'Zero Road · Google Listing',
-                quote:
-                  '[Verified Google patient testimonial placeholder — ready to display authentic patient feedback from Mittal Dental Clinic, Zero Road once provided.]',
-                author: '[Verified Patient Name Pending]',
-              },
-              {
-                slot: '03',
-                branchLabel: 'Prayagraj · Google Review',
-                quote:
-                  '[Verified Google patient testimonial placeholder — reserved exclusively for genuine, clinic-verified Google review excerpts.]',
-                author: '[Verified Patient Name Pending]',
-              },
-            ].map((card) => (
-              <article
-                key={card.slot}
-                className="rounded-3xl bg-[#082B48]/70 backdrop-blur-md border border-dashed border-[#00D9FF]/35 p-6 sm:p-7 flex flex-col justify-between gap-5 shadow-[0_12px_32px_rgba(6,21,37,0.22)]"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-1" aria-hidden="true">
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <Star key={n} className="w-3.5 h-3.5 text-[#00D9FF]/65" />
-                      ))}
+                            const fillPct = Math.round(
+                              Math.max(0, Math.min(1, liveRating - (n - 1))) * 100,
+                            );
+                            const gradId = `google-rating-star-${n}`;
+
+                            return (
+                              <svg
+                                key={n}
+                                viewBox="0 0 24 24"
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="#00D9FF"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <defs>
+                                  <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset={`${fillPct}%`} stopColor="#00D9FF" />
+                                    <stop
+                                      offset={`${fillPct}%`}
+                                      stopColor="#00D9FF"
+                                      stopOpacity="0.14"
+                                    />
+                                  </linearGradient>
+                                </defs>
+                                <polygon
+                                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                                  fill={`url(#${gradId})`}
+                                  strokeOpacity={fillPct > 0 ? 1 : 0.35}
+                                />
+                              </svg>
+                            );
+                          })}
+                        </div>
+                        <span className="ml-1.5 text-xs font-semibold text-[#00D9FF] tabular-nums">
+                          {liveRating !== null
+                            ? `Google Rating: ${liveRating.toFixed(1)}/5`
+                            : 'Google Rating: [Awaiting Verified Score]'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#DFFAFF]/78 tabular-nums">
+                        {liveCount !== null
+                          ? `Total Google Reviews: ${liveCount.toLocaleString('en-IN')}`
+                          : 'Total Google Reviews: [Verified Review Count Pending]'}
+                      </p>
                     </div>
-                    <span className="font-mono text-[11px] font-semibold text-[#00D9FF]/80">
-                      Review Slot {card.slot}
-                    </span>
-                  </div>
 
-                  <div className="flex items-start gap-2.5">
-                    <Quote className="w-4 h-4 text-[#00C6B7] shrink-0 mt-1" aria-hidden="true" />
-                    <p className="text-sm text-[#DFFAFF]/82 leading-relaxed">
-                      {card.quote}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-white/10">
-                  <p className="font-display text-sm font-bold text-white">
-                    {card.author}
-                  </p>
-                  <p className="text-xs text-[#00D9FF] mt-0.5">{card.branchLabel}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          {/* Direct Links to Both Prayagraj Google Business Listings */}
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-white/10">
-            <p className="text-xs text-[#DFFAFF]/70">
-              Read live, unedited patient reviews directly on our official Google Business profiles:
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              {branches.map((branch) => (
-                <a
-                  key={branch.id}
-                  href={branch.googleProfileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl bg-[#061525]/70 hover:bg-[#00D9FF]/15 border border-[#00D9FF]/30 hover:border-[#00D9FF]/65 text-xs font-semibold text-white transition-all"
-                >
-                  <span>
-                    Google Reviews · {branch.id === 'civil-lines' ? 'Civil Lines' : 'Zero Road'}
-                  </span>
-                  <ExternalLink className="w-3.5 h-3.5 text-[#00D9FF]" />
-                </a>
-              ))}
+                    <a
+                      href={reviewLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-[#176BFF] to-[#00C6B7] hover:shadow-[0_0_20px_rgba(0,217,255,0.42)] text-white text-xs font-semibold whitespace-nowrap transition-all"
+                    >
+                      <span>Read Reviews on Google</span>
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                    </a>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -728,7 +733,7 @@ export function HomePage() {
           </h2>
           <p className="text-sm sm:text-base text-[#DFFAFF]/80 max-w-2xl mx-auto">
             Request an appointment online or speak directly with our Prayagraj clinic desk on{' '}
-            <span className="font-semibold text-white tabular-nums">{CLINIC_INFO.phoneDisplay}</span>.
+            <span className="font-semibold text-white tabular-nums">{clinicInfo.phoneDisplay}</span>.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <Link
@@ -739,11 +744,11 @@ export function HomePage() {
               <span>Book Appointment</span>
             </Link>
             <a
-              href={CLINIC_INFO.phoneHref}
+              href={phoneHref}
               className="inline-flex items-center gap-2 px-6 py-3.5 min-h-[44px] rounded-xl bg-white/10 hover:bg-white/16 border border-[#00D9FF]/35 text-white text-sm font-semibold tabular-nums transition-colors"
             >
               <Phone className="w-4 h-4 text-[#00D9FF]" />
-              <span>{CLINIC_INFO.phoneDisplay}</span>
+              <span>{clinicInfo.phoneDisplay}</span>
             </a>
           </div>
         </div>

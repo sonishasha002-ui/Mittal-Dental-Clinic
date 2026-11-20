@@ -1,9 +1,14 @@
 import { Link } from 'react-router-dom';
 import { Phone } from 'lucide-react';
-import { CLINIC_INFO, type BranchInfo } from '../data/clinicData';
+import type { BranchInfo } from '../data/clinicData';
+import { useClinic } from '../context/ClinicContext';
+import { buildPhoneHref } from '../services/clinicFirestore';
 import { NAV_ROUTES } from './Navbar';
 
 export function Footer({ branches: _branches }: { branches?: BranchInfo[] }) {
+  const { clinicInfo, doctorProfile } = useClinic();
+  const phoneHref = buildPhoneHref(clinicInfo.phoneDisplay);
+
   return (
     <footer className="relative bg-[#040F1B] text-white border-t border-[#00D9FF]/20">
       <div
@@ -24,27 +29,27 @@ export function Footer({ branches: _branches }: { branches?: BranchInfo[] }) {
                 </svg>
               </span>
               <span className="font-display text-lg font-bold tracking-tight group-hover:text-[#00D9FF] transition-colors">
-                {CLINIC_INFO.name}
+                {clinicInfo.name}
               </span>
             </Link>
 
             <p className="text-sm text-[#DFFAFF]/78 leading-relaxed">
-              {CLINIC_INFO.description}
+              {clinicInfo.description}
             </p>
 
             <div className="pt-1">
               <p className="font-display text-sm font-bold text-white">
-                {CLINIC_INFO.doctor.name}
+                {doctorProfile.name}
               </p>
-              <p className="text-xs text-[#00D9FF]">{CLINIC_INFO.doctor.qualification}</p>
+              <p className="text-xs text-[#00D9FF]">{doctorProfile.qualification}</p>
             </div>
 
             <a
-              href={CLINIC_INFO.phoneHref}
+              href={phoneHref}
               className="inline-flex items-center gap-2 text-sm font-semibold text-white hover:text-[#00D9FF] transition-colors tabular-nums pt-1 min-h-[44px]"
             >
               <Phone className="w-4 h-4 text-[#00D9FF]" />
-              <span>{CLINIC_INFO.phoneDisplay}</span>
+              <span>{clinicInfo.phoneDisplay}</span>
             </a>
           </div>
 
@@ -70,10 +75,10 @@ export function Footer({ branches: _branches }: { branches?: BranchInfo[] }) {
 
         <div className="pt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-[#DFFAFF]/55">
           <p>
-            © {new Date().getFullYear()} {CLINIC_INFO.name}, Prayagraj. All rights reserved.
+            © {new Date().getFullYear()} {clinicInfo.name}, Prayagraj. All rights reserved.
           </p>
           <p>
-            Please confirm branch-specific appointment timings via {CLINIC_INFO.phoneDisplay}.
+            Please confirm branch-specific appointment timings via {clinicInfo.phoneDisplay}.
           </p>
         </div>
       </div>

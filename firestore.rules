@@ -1,0 +1,239 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: deny all reads/writes unless explicitly allowed below
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Primitives ---
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSafeImageSrc(url) {
+      return url is string &&
+        url.size() <= 450000 &&
+        url.matches('^(https://.*|data:image/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+)$');
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'sonishasha002@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // --- Validation Blueprints ---
+    function isValidClinicInfo(data) {
+      return data.keys().hasAll([
+        'name', 'city', 'description', 'phoneDisplay', 'whatsappNumber', 'updatedAt', 'updatedBy'
+      ]) && data.keys().hasOnly([
+        'name', 'city', 'description', 'phoneDisplay', 'whatsappNumber', 'updatedAt', 'updatedBy'
+      ]) &&
+      data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+      data.city is string && data.city.size() >= 2 && data.city.size() <= 100 &&
+      data.description is string && data.description.size() >= 10 && data.description.size() <= 500 &&
+      data.phoneDisplay is string && data.phoneDisplay.size() >= 6 && data.phoneDisplay.size() <= 25 &&
+      data.whatsappNumber is string && data.whatsappNumber.size() >= 10 && data.whatsappNumber.size() <= 20 &&
+      data.updatedAt == request.time &&
+      data.updatedBy is string && data.updatedBy == request.auth.uid;
+    }
+
+    function isValidDoctorProfile(data) {
+      return data.keys().hasAll([
+        'name', 'qualification', 'roleTitle', 'bio', 'clinicalScope',
+        'portraitUrl', 'portraitCaption', 'updatedAt', 'updatedBy'
+      ]) && data.keys().hasOnly([
+        'name', 'qualification', 'roleTitle', 'bio', 'clinicalScope',
+        'portraitUrl', 'portraitCaption', 'updatedAt', 'updatedBy'
+      ]) &&
+      data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+      data.qualification is string && data.qualification.size() >= 2 && data.qualification.size() <= 120 &&
+      data.roleTitle is string && data.roleTitle.size() >= 2 && data.roleTitle.size() <= 120 &&
+      data.bio is string && data.bio.size() >= 10 && data.bio.size() <= 1200 &&
+      data.clinicalScope is string && data.clinicalScope.size() >= 2 && data.clinicalScope.size() <= 120 &&
+      (data.portraitUrl == '' || isSafeImageSrc(data.portraitUrl)) &&
+      data.portraitCaption is string && data.portraitCaption.size() <= 220 &&
+      data.updatedAt == request.time &&
+      data.updatedBy is string && data.updatedBy == request.auth.uid;
+    }
+
+    function isValidBranchRecord(data) {
+      return data.keys().hasAll([
+        'id', 'label', 'name', 'badge', 'addressLines', 'fullAddress', 'phone',
+        'mapsUrl', 'embedMapUrl', 'googleProfileUrl', 'mondayToSaturday', 'sunday',
+        'hoursNote', 'updatedAt', 'updatedBy'
+      ]) && data.keys().hasOnly([
+        'id', 'label', 'name', 'badge', 'addressLines', 'fullAddress', 'phone',
+        'mapsUrl', 'embedMapUrl', 'googleProfileUrl', 'mondayToSaturday', 'sunday',
+        'hoursNote', 'updatedAt', 'updatedBy'
+      ]) &&
+      data.id in ['civil-lines', 'zero-road'] &&
+      data.label is string && data.label.size() >= 2 && data.label.size() <= 60 &&
+      data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+      data.badge is string && data.badge.size() >= 2 && data.badge.size() <= 100 &&
+      data.addressLines is list && data.addressLines.size() >= 1 && data.addressLines.size() <= 5 &&
+      data.addressLines[0] is string && data.addressLines[0].size() <= 140 &&
+      data.fullAddress is string && data.fullAddress.size() >= 10 && data.fullAddress.size() <= 300 &&
+      data.phone is string && data.phone.size() >= 6 && data.phone.size() <= 25 &&
+      data.mapsUrl is string && data.mapsUrl.size() >= 8 && data.mapsUrl.size() <= 400 && data.mapsUrl.matches('^https://.*') &&
+      data.embedMapUrl is string && data.embedMapUrl.size() <= 600 && (data.embedMapUrl == '' || data.embedMapUrl.matches('^https://.*')) &&
+      data.googleProfileUrl is string && data.googleProfileUrl.size() >= 8 && data.googleProfileUrl.size() <= 400 && data.googleProfileUrl.matches('^https://.*') &&
+      data.mondayToSaturday is list && data.mondayToSaturday.size() >= 1 && data.mondayToSaturday.size() <= 6 &&
+      data.mondayToSaturday[0] is string && data.mondayToSaturday[0].size() <= 60 &&
+      data.sunday is list && data.sunday.size() >= 1 && data.sunday.size() <= 4 &&
+      data.sunday[0] is string && data.sunday[0].size() <= 60 &&
+      data.hoursNote is string && data.hoursNote.size() <= 300 &&
+      data.updatedAt == request.time &&
+      data.updatedBy is string && data.updatedBy == request.auth.uid;
+    }
+
+    function isValidGalleryPhoto(data) {
+      return data.keys().hasAll([
+        'category', 'title', 'branchId', 'caption', 'imageDataUrl', 'createdAt', 'updatedAt', 'updatedBy'
+      ]) && data.keys().hasOnly([
+        'category', 'title', 'branchId', 'caption', 'imageDataUrl', 'createdAt', 'updatedAt', 'updatedBy'
+      ]) &&
+      data.category in ['exterior', 'reception', 'treatment-area', 'equipment', 'doctor-portrait'] &&
+      data.title is string && data.title.size() >= 2 && data.title.size() <= 120 &&
+      data.branchId in ['civil-lines', 'zero-road', 'both'] &&
+      data.caption is string && data.caption.size() <= 250 &&
+      data.imageDataUrl is string && data.imageDataUrl.size() >= 10 && isSafeImageSrc(data.imageDataUrl) &&
+      data.createdAt is timestamp &&
+      data.updatedAt == request.time &&
+      data.updatedBy is string && data.updatedBy == request.auth.uid;
+    }
+
+    function isValidAppointmentBase(data) {
+      return data.referenceCode is string && data.referenceCode.size() >= 5 && data.referenceCode.size() <= 24 && data.referenceCode.matches('^MDC-[A-Z0-9]+$') &&
+      data.patientName is string && data.patientName.size() >= 2 && data.patientName.size() <= 120 &&
+      data.mobileNumber is string && data.mobileNumber.size() >= 10 && data.mobileNumber.size() <= 20 &&
+      data.branchId in ['civil-lines', 'zero-road'] &&
+      data.branchName is string && data.branchName.size() >= 2 && data.branchName.size() <= 120 &&
+      data.treatment is string && data.treatment.size() >= 2 && data.treatment.size() <= 120 &&
+      data.preferredDate is string && data.preferredDate.size() >= 8 && data.preferredDate.size() <= 20 && data.preferredDate.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+      data.preferredTime is string && data.preferredTime.size() >= 3 && data.preferredTime.size() <= 60 &&
+      data.message is string && data.message.size() <= 800 &&
+      data.status in ['pending_clinic_confirmation', 'confirmed', 'completed', 'cancelled'] &&
+      data.createdAt is timestamp &&
+      data.updatedAt == request.time;
+    }
+
+    function isValidNewAppointment(data) {
+      return data.keys().hasAll([
+        'referenceCode', 'patientName', 'mobileNumber', 'branchId', 'branchName',
+        'treatment', 'preferredDate', 'preferredTime', 'message', 'status', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'referenceCode', 'patientName', 'mobileNumber', 'branchId', 'branchName',
+        'treatment', 'preferredDate', 'preferredTime', 'message', 'status', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidAppointmentBase(data) &&
+      data.status == 'pending_clinic_confirmation' &&
+      data.createdAt == request.time;
+    }
+
+    function isValidAdminAppointmentUpdate(data) {
+      return data.keys().hasAll([
+        'referenceCode', 'patientName', 'mobileNumber', 'branchId', 'branchName',
+        'treatment', 'preferredDate', 'preferredTime', 'message', 'status', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'referenceCode', 'patientName', 'mobileNumber', 'branchId', 'branchName',
+        'treatment', 'preferredDate', 'preferredTime', 'message', 'status', 'adminNotes', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidAppointmentBase(data) &&
+      (!('adminNotes' in data) || (data.adminNotes is string && data.adminNotes.size() <= 500)) &&
+      data.createdAt == existing().createdAt &&
+      data.referenceCode == existing().referenceCode;
+    }
+
+    function isValidAdminRecord(data) {
+      return data.keys().hasAll(['email', 'role', 'addedBy', 'createdAt']) &&
+        data.keys().hasOnly(['email', 'role', 'addedBy', 'createdAt']) &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 160 &&
+        data.role == 'admin' &&
+        data.addedBy is string && data.addedBy == request.auth.uid &&
+        data.createdAt == request.time;
+    }
+
+    // --- Collection Rules ---
+
+    // Health / SDK connection probe (public read, never writable)
+    match /test/connection {
+      allow get: if true;
+      allow list, write: if false;
+    }
+
+    // Public Clinic Info (no PII)
+    match /clinic_info/{docId} {
+      allow get: if isValidId(docId);
+      allow list: if false;
+      allow create: if isValidId(docId) && docId == 'main' && isAdmin() && isValidClinicInfo(incoming());
+      allow update: if isValidId(docId) && docId == 'main' && isAdmin() && isValidClinicInfo(incoming());
+      allow delete: if false;
+    }
+
+    // Public Doctor Profile (no PII)
+    match /doctor_profile/{docId} {
+      allow get: if isValidId(docId);
+      allow list: if false;
+      allow create: if isValidId(docId) && docId == 'main' && isAdmin() && isValidDoctorProfile(incoming());
+      allow update: if isValidId(docId) && docId == 'main' && isAdmin() && isValidDoctorProfile(incoming());
+      allow delete: if false;
+    }
+
+    // Public Branches & Opening Hours (no PII)
+    match /branches/{branchId} {
+      allow get: if isValidId(branchId);
+      allow list: if true;
+      allow create: if isValidId(branchId) && isAdmin() && isValidBranchRecord(incoming()) && incoming().id == branchId;
+      allow update: if isValidId(branchId) && isAdmin() && isValidBranchRecord(incoming()) && incoming().id == existing().id;
+      allow delete: if false;
+    }
+
+    // Public Clinic Photo Gallery (Admin-only uploads, edits, deletes)
+    match /gallery/{photoId} {
+      allow get: if isValidId(photoId);
+      allow list: if true;
+      allow create: if isValidId(photoId) && isAdmin() && isValidGalleryPhoto(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(photoId) && isAdmin() && isValidGalleryPhoto(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(photoId) && isAdmin();
+    }
+
+    // Private Appointment Requests (PII isolated strictly to verified admins)
+    match /appointments/{appointmentId} {
+      allow get: if isValidId(appointmentId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(appointmentId) && isValidNewAppointment(incoming());
+      allow update: if isValidId(appointmentId) && isAdmin() && isValidAdminAppointmentUpdate(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'adminNotes', 'updatedAt']);
+      allow delete: if isValidId(appointmentId) && isAdmin();
+    }
+
+    // Authorized Admin Registry
+    match /admins/{uid} {
+      allow get: if isValidId(uid) && isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(uid) && isAdmin() && isValidAdminRecord(incoming());
+      allow update: if false;
+      allow delete: if isValidId(uid) && isAdmin() && uid != request.auth.uid;
+    }
+  }
+}

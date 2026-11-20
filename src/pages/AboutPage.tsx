@@ -7,17 +7,17 @@ import {
   Phone,
   ShieldCheck,
   Sparkles,
-  Upload,
 } from 'lucide-react';
-import { CLINIC_INFO, CONCEPT_VISUALS } from '../data/clinicData';
+import { CONCEPT_VISUALS } from '../data/clinicData';
 import { useClinic } from '../context/ClinicContext';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { WhyChooseUsSection } from '../components/WhyChooseUsSection';
 import { ImageWithFallback } from '../components/ImageWithFallback';
+import { buildPhoneHref } from '../services/clinicFirestore';
 
 export function AboutPage() {
   usePageMeta();
-  const { branches, gallery, openUploader } = useClinic();
+  const { clinicInfo, doctorProfile, branches, gallery } = useClinic();
   const exteriorPhoto = gallery.find((g) => g.category === 'exterior');
 
   return (
@@ -37,15 +37,15 @@ export function AboutPage() {
               className="lg:col-span-6 space-y-5"
             >
               <p className="text-xs sm:text-sm font-bold tracking-[0.16em] text-[#00D9FF] uppercase">
-                About Mittal Dental Clinic
+                About {clinicInfo.name}
               </p>
               <h1 className="font-display text-3xl sm:text-5xl font-extrabold text-white tracking-tight text-balance leading-[1.1]">
                 Patient-First Multispecialty Dental &amp; Orthodontic Care in Prayagraj
               </h1>
               <p className="text-sm sm:text-base text-[#DFFAFF]/85 leading-relaxed">
-                {CLINIC_INFO.description} Led by{' '}
+                {clinicInfo.description} Led by{' '}
                 <strong className="font-semibold text-white">
-                  {CLINIC_INFO.doctor.name} ({CLINIC_INFO.doctor.qualification})
+                  {doctorProfile.name} ({doctorProfile.qualification})
                 </strong>
                 , our focus is clear diagnosis, gentle chairside pace, and enduring oral health.
               </p>
@@ -54,7 +54,7 @@ export function AboutPage() {
                   to="/doctor"
                   className="inline-flex items-center gap-2 px-5 py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-[#176BFF] to-[#00C6B7] text-white text-xs sm:text-sm font-semibold"
                 >
-                  <span>Meet Dr. Rishabh Mittal</span>
+                  <span>Meet {doctorProfile.name}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
@@ -237,24 +237,23 @@ export function AboutPage() {
                       Authentic Clinic Exterior Frame
                     </h3>
                     <p className="text-sm text-[#061525]/75 dark:text-[#DFFAFF]/80 leading-relaxed">
-                      Only verified street-level photographs uploaded by Mittal Dental Clinic are shown as clinic exterior photos.
+                      Only verified street-level photographs uploaded by {clinicInfo.name} are shown as clinic exterior photos.
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-[#082B48]/10 dark:border-white/12">
-                    <button
-                      type="button"
-                      onClick={() => openUploader('exterior')}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl bg-[#EDF7FC] dark:bg-[#061525]/80 border border-[#082B48]/15 dark:border-[#00D9FF]/30 text-xs font-semibold text-[#061525] dark:text-white hover:border-[#00D9FF] transition-colors cursor-pointer"
+                    <Link
+                      to="/gallery"
+                      className="inline-flex items-center gap-2 text-xs font-semibold text-[#176BFF] dark:text-[#00D9FF] hover:underline min-h-[44px]"
                     >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Add Clinic Exterior Photo</span>
-                    </button>
+                      <span>View Clinic Gallery</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
                     <a
-                      href={CLINIC_INFO.phoneHref}
+                      href={buildPhoneHref(clinicInfo.phoneDisplay)}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#061525] dark:text-[#DFFAFF] tabular-nums"
                     >
                       <Phone className="w-3.5 h-3.5 text-[#00C6B7] dark:text-[#00D9FF]" />
-                      <span>{CLINIC_INFO.phoneDisplay}</span>
+                      <span>{clinicInfo.phoneDisplay}</span>
                     </a>
                   </div>
                 </div>

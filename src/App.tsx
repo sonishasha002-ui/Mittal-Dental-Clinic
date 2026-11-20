@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import { ClinicProvider, useClinic } from './context/ClinicContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
-import { GalleryUploadModal } from './components/GalleryUploadModal';
 import { HomePage } from './pages/HomePage';
 import { AboutPage } from './pages/AboutPage';
 import { TreatmentsPage } from './pages/TreatmentsPage';
@@ -13,6 +14,7 @@ import { DoctorPage } from './pages/DoctorPage';
 import { GalleryPage } from './pages/GalleryPage';
 import { LocationsPage } from './pages/LocationsPage';
 import { ContactPage } from './pages/ContactPage';
+import { AdminPage } from './pages/AdminPage';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -22,12 +24,11 @@ function ScrollToTop() {
   return null;
 }
 
-function AppShell() {
+function PublicLayout() {
   const { branches } = useClinic();
 
   return (
     <div className="min-h-screen flex flex-col bg-[#EDF7FC] dark:bg-[#061525] text-[#061525] dark:text-white transition-colors duration-300 overflow-x-hidden">
-      <ScrollToTop />
       <Navbar />
 
       <main className="flex-1">
@@ -45,17 +46,32 @@ function AppShell() {
 
       <Footer branches={branches} />
       <FloatingWhatsApp />
-      <GalleryUploadModal />
     </div>
+  );
+}
+
+function AppRouter() {
+  return (
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route path="/admin/*" element={<AdminPage />} />
+        <Route path="*" element={<PublicLayout />} />
+      </Routes>
+    </>
   );
 }
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <ClinicProvider>
-        <AppShell />
-      </ClinicProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <ClinicProvider>
+            <AppRouter />
+          </ClinicProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

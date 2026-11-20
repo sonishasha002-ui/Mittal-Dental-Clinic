@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { ArrowRight, Check, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { TreatmentItem } from '../data/clinicData';
+import { useClinic } from '../context/ClinicContext';
 import { TreatmentIllustration3D } from './TreatmentIllustration3D';
 import { ImageWithFallback } from './ImageWithFallback';
 
@@ -14,6 +15,7 @@ export function TreatmentModal({
   onClose: () => void;
 }) {
   const navigate = useNavigate();
+  const { doctorProfile } = useClinic();
 
   useEffect(() => {
     if (!item) return;
@@ -99,7 +101,7 @@ export function TreatmentModal({
               </div>
 
               <p className="text-xs text-[#061525]/65 dark:text-[#DFFAFF]/65 pt-3 border-t border-[#082B48]/10 dark:border-white/12">
-                Specific clinical suitability and treatment plans are determined following an in-clinic oral examination by Dr. Rishabh Mittal.
+                Specific clinical suitability and treatment plans are determined following an in-clinic oral examination by {doctorProfile.name}.
               </p>
 
               <div className="flex flex-wrap items-center justify-end gap-3 pt-2">

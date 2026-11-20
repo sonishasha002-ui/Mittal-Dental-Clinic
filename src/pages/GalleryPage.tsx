@@ -7,8 +7,6 @@ import {
   ChevronRight,
   MonitorCheck,
   Sparkles,
-  Trash2,
-  Upload,
   X,
   ZoomIn,
 } from 'lucide-react';
@@ -95,7 +93,7 @@ const CONCEPT_SHOWCASE = [
 
 export function GalleryPage() {
   usePageMeta();
-  const { gallery, deletePhoto, openUploader } = useClinic();
+  const { gallery } = useClinic();
   const [filter, setFilter] = useState<CategoryFilter>('all');
   const [lightboxItems, setLightboxItems] = useState<
     { url: string; title: string; caption?: string; id?: string }[]
@@ -154,18 +152,6 @@ export function GalleryPage() {
     setLightboxIndex(idx);
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      const res = await fetch(`/api/gallery/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        deletePhoto(id);
-        setLightboxIndex(null);
-      }
-    } catch {
-      // ignore on failure
-    }
-  };
-
   return (
     <div>
       {/* Page Hero */}
@@ -186,14 +172,6 @@ export function GalleryPage() {
               Verified clinic photographs of Civil Lines and Zero Road appear here alongside 3D clinical care visualizations.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => openUploader('exterior')}
-            className="inline-flex items-center gap-2 px-5 py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-[#176BFF] to-[#00C6B7] hover:shadow-[0_0_22px_rgba(0,217,255,0.4)] text-white text-xs sm:text-sm font-semibold transition-all whitespace-nowrap shrink-0 cursor-pointer self-start lg:self-auto"
-          >
-            <Upload className="w-4 h-4" />
-            <span>Upload Clinic Photograph</span>
-          </button>
         </div>
       </section>
 
@@ -261,14 +239,6 @@ export function GalleryPage() {
                       >
                         <ZoomIn className="w-4 h-4" />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(photo.id)}
-                        className="min-w-[44px] min-h-[44px] rounded-xl border border-[#082B48]/15 dark:border-[#00D9FF]/25 flex items-center justify-center text-[#061525]/65 dark:text-[#DFFAFF]/65 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
-                        aria-label={`Remove ${photo.title}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
                   </div>
                 </figure>
@@ -292,17 +262,9 @@ export function GalleryPage() {
                     <h2 className="font-display text-base font-bold text-[#061525] dark:text-white mb-1.5">
                       {slot.title}
                     </h2>
-                    <p className="text-xs text-[#061525]/70 dark:text-[#DFFAFF]/75 leading-relaxed mb-4">
+                    <p className="text-xs text-[#061525]/70 dark:text-[#DFFAFF]/75 leading-relaxed">
                       {slot.subtitle}
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => openUploader(slot.category)}
-                      className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-[#176BFF] dark:text-[#00D9FF] hover:text-[#061525] dark:hover:text-white transition-colors cursor-pointer"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Add Authentic Photo</span>
-                    </button>
                   </div>
                 </div>
               ))}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ImageOff } from 'lucide-react';
 
 interface ImageWithFallbackProps {
@@ -17,6 +17,10 @@ export function ImageWithFallback({
   onClick,
 }: ImageWithFallbackProps) {
   const [errored, setErrored] = useState(false);
+
+  useEffect(() => {
+    setErrored(false);
+  }, [src]);
 
   if (!src || errored) {
     return (

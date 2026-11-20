@@ -1,0 +1,386 @@
+{
+  "entities": {
+    "ClinicInfo": {
+      "title": "ClinicInfo",
+      "description": "Official public clinic metadata for Mittal Dental Clinic, Prayagraj.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "city": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500
+        },
+        "phoneDisplay": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 25
+        },
+        "whatsappNumber": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 20
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "name",
+        "city",
+        "description",
+        "phoneDisplay",
+        "whatsappNumber",
+        "updatedAt",
+        "updatedBy"
+      ]
+    },
+    "DoctorProfile": {
+      "title": "DoctorProfile",
+      "description": "Verified doctor profile and portrait data for Dr. Rishabh Mittal.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "qualification": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "roleTitle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "bio": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 1200
+        },
+        "clinicalScope": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "portraitUrl": {
+          "type": "string",
+          "maxLength": 450000
+        },
+        "portraitCaption": {
+          "type": "string",
+          "maxLength": 220
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "name",
+        "qualification",
+        "roleTitle",
+        "bio",
+        "clinicalScope",
+        "portraitUrl",
+        "portraitCaption",
+        "updatedAt",
+        "updatedBy"
+      ]
+    },
+    "BranchRecord": {
+      "title": "BranchRecord",
+      "description": "Clinic branch address, map links, and independently editable opening hours.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": ["civil-lines", "zero-road"]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "badge": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "addressLines": {
+          "type": "array"
+        },
+        "fullAddress": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 300
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 25
+        },
+        "mapsUrl": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 400,
+          "pattern": "^https://"
+        },
+        "embedMapUrl": {
+          "type": "string",
+          "maxLength": 600
+        },
+        "googleProfileUrl": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 400,
+          "pattern": "^https://"
+        },
+        "mondayToSaturday": {
+          "type": "array"
+        },
+        "sunday": {
+          "type": "array"
+        },
+        "hoursNote": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "name",
+        "badge",
+        "addressLines",
+        "fullAddress",
+        "phone",
+        "mapsUrl",
+        "embedMapUrl",
+        "googleProfileUrl",
+        "mondayToSaturday",
+        "sunday",
+        "hoursNote",
+        "updatedAt",
+        "updatedBy"
+      ]
+    },
+    "GalleryPhoto": {
+      "title": "GalleryPhoto",
+      "description": "Authorized clinic photograph stored in the clinic media library.",
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": ["exterior", "reception", "treatment-area", "equipment", "doctor-portrait"]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "branchId": {
+          "type": "string",
+          "enum": ["civil-lines", "zero-road", "both"]
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 250
+        },
+        "imageDataUrl": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 450000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "category",
+        "title",
+        "branchId",
+        "caption",
+        "imageDataUrl",
+        "createdAt",
+        "updatedAt",
+        "updatedBy"
+      ]
+    },
+    "AppointmentRequest": {
+      "title": "AppointmentRequest",
+      "description": "Private patient consultation request containing PII; readable and manageable exclusively by verified clinic admins.",
+      "type": "object",
+      "properties": {
+        "referenceCode": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 24,
+          "pattern": "^MDC-[A-Z0-9]+$"
+        },
+        "patientName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "mobileNumber": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 20
+        },
+        "branchId": {
+          "type": "string",
+          "enum": ["civil-lines", "zero-road"]
+        },
+        "branchName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "treatment": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "preferredDate": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 20,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "preferredTime": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 60
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 800
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending_clinic_confirmation", "confirmed", "completed", "cancelled"]
+        },
+        "adminNotes": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "referenceCode",
+        "patientName",
+        "mobileNumber",
+        "branchId",
+        "branchName",
+        "treatment",
+        "preferredDate",
+        "preferredTime",
+        "message",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Explicitly authorized clinic administrator account UIDs.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 160
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin"]
+        },
+        "addedBy": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["email", "role", "addedBy", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/clinic_info/{docId}": {
+      "schema": { "$ref": "#/entities/ClinicInfo" },
+      "description": "Publicly readable clinic summary settings writable only by admins."
+    },
+    "/doctor_profile/{docId}": {
+      "schema": { "$ref": "#/entities/DoctorProfile" },
+      "description": "Publicly readable doctor profile & portrait writable only by admins."
+    },
+    "/branches/{branchId}": {
+      "schema": { "$ref": "#/entities/BranchRecord" },
+      "description": "Publicly readable Prayagraj branch locations & hours writable only by admins."
+    },
+    "/gallery/{photoId}": {
+      "schema": { "$ref": "#/entities/GalleryPhoto" },
+      "description": "Publicly readable clinic media library writable/deletable only by admins."
+    },
+    "/appointments/{appointmentId}": {
+      "schema": { "$ref": "#/entities/AppointmentRequest" },
+      "description": "Private patient appointment requests; public create allowed with strict pending status, reads/updates/deletes strictly restricted to verified admins."
+    },
+    "/admins/{uid}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Authorized admin UID registry readable by the user checking their own doc or admins, writable only by existing admins."
+    }
+  }
+}
